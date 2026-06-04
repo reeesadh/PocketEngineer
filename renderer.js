@@ -1,3 +1,11 @@
+// electron store
+const Store = require('electron-store');
+const store = new Store();
+let need_username = false;
+let need_physics_level = false;
+let setup_incomplete = false;
+let need_physics_units = false;
+
 // start websocket
 const ws = new WebSocket("ws://127.0.0.1:18789"); // TODO: replace with where you are running openclaw
 
@@ -7,6 +15,28 @@ let connected = false;
 // check if websocket started
 ws.onopen = () => {
     console.log("websocket started")
+    const user = store.get('username');
+    const pl = store.get('physics-level');
+    const pu = store.get('physics-units');
+    console.log(user);
+    console.log(pl);
+    console.log(pu);
+    if (!user || !pl || !pu) {
+        setup_incomplete = true;
+    }
+    if (setup_incomplete) {
+        need_username = true;
+        need_physics_level = true;
+        need_physics_units = true;
+        // ask for username
+        const chat = document.getElementById("chat");
+        const row = document.createElement("div");
+        row.className = "msg-row assistant";
+        row.innerHTML = `<div style="background-color: #210909; color: red; width: fit-content; border: 1px solid #fafafa; padding: 8px; margin 5px 0; border-radius: 4px;>
+        <p style="margin: 0;"><b>assistant:</b> ${"Hello! it seems like you're new here. I am your personal physics learning assistant. Lets start with a few questions, what would you like me to call you?"}</p></div>`;
+        chat.appendChild(row);
+    }
+        
 };
 
 ws.onerror = (err) => {
@@ -34,7 +64,7 @@ ws.onmessage = (msg) => {
             id: String(crypto.randomUUID()),
             method: "connect",
             params: {
-		minProtocol: 3,
+        minProtocol: 3,
                 maxProtocol: 4,
                 role: "operator",
                 scopes: ["operator.read", "operator.write"],
@@ -45,14 +75,15 @@ ws.onmessage = (msg) => {
                     mode: "ui"
                 },
                 auth: {
-                    token: "OPENCLAW GATEWAY TOKEN".trim() //TODO: replace with your openclaw gateway token
+                    token: "OPENCLAW_GATEWAY_TOKEN".trim() //TODO: replace with your openclaw gateway token
                 },
             }
         };
 
-        console.log("sending user msg: ", JSON.stringify(payload, null, 2));
-        ws.send(JSON.stringify(payload));
-    }
+    console.log("sending user msg: ", JSON.stringify(payload, null, 2));
+    ws.send(JSON.stringify(payload));
+
+}
 
     // check if openclaw connected
     if (data.type === "res" && data.ok && data.payload?.type == "hello-ok") {
@@ -77,13 +108,13 @@ ws.onmessage = (msg) => {
             // if response already exists append
             if (existing) {
                 existing.innerHTML = `<div style="background-color: #210909; color: red; width: fit-content; border: 1px solid #fafafa; padding: 8px; margin 5px 0; border-radius: 4px;>
-        <p style="margin: 0;"><b>assistant:</b> ${existing.dataset.text + payload.deltaText}</p></div>`
+        <p style="margin: 0;"><b>assistant:</b> ${existing.dataset.text + payload.deltaText}</p></div>`;
                 existing.dataset.text += payload.deltaText;
             } else { // if response doesn't already exist make one
                 const p = document.createElement("p");
                 p.id = "assistant-last";
                 p.dataset.text = payload.deltaText;
-                p.innerHTML = `<div style="color: red; width: fit-content; border: 1px solid #000; padding: 8px; margin: 5px 0; border-radius: 4px;">
+                p.innerHTML = `<div style="background-color: #210909; color: red; width: fit-content; border: 1px solid #fafafa; padding: 8px; margin 5px 0; border-radius: 4px;>
         <p style="margin: 0;"><b>assistant:</b> ${payload.deltaText}</p></div>`;
                 chat.appendChild(p);
             }
@@ -92,8 +123,14 @@ ws.onmessage = (msg) => {
         // clear wip response if last chunk of openclaw response is sent
         if (payload.state === "final") {
             const el = document.getElementById("assistant-last");
-            if (el) el.removeAttribute("id");
-        }
+            console.log(document.getElementById("assistant-last").dataset.text);
+            // update for physics units if needed
+            if (need_physics_units) {
+                store.set('physics-units', document.getElementById("assistant-last").dataset.text);
+                need_physics_units = false;
+                setup_incomplete = false;
+            }
+            if (el) el.removeAttribute("id");        }
     }
     
     if (data.type == "event") {
@@ -122,6 +159,53 @@ window.send = function () {
             idempotencyKey: String(crypto.randomUUID())
         }
     };
+
+    if (setup_incomplete) {
+        if (need_username) {
+            console.log('setting username: ' + message);
+            store.set('username', message);
+            need_username = false;
+            const u = store.get('username');
+            console.log(u);
+            need_username = false;
+            // prompt for physics level
+            const chat = document.getElementById("chat");
+            const row = document.createElement("div");
+            row.className = "msg-row assistant";
+            row.innerHTML = `<div style="background-color: #210909; color: red; width: fit-content; border: 1px solid #fafafa; padding: 8px; margin 5px 0; border-radius: 4px;>
+            <p style="margin: 0;"><b>assistant:</b> ${"Hello " + message + "! What level of physics are you studying? For example, AP Physics 1, Mechanics, Electricity&Magnetism, or whatever else you're working on!"}</p></div>`;
+            chat.appendChild(row);
+        } else if (need_physics_level) {
+            // yap
+            console.log('setting physics level: ' + message);
+            store.set('physics-level', message);
+            need_username = false;
+            const u = store.get('physics-level');
+            console.log(u);
+            need_physics_level = false;
+            // prompt for physics units
+            const chat = document.getElementById("chat");
+            const row = document.createElement("div");
+            row.className = "msg-row assistant";
+            row.innerHTML = `<div style="background-color: #210909; color: red; width: fit-content; border: 1px solid #fafafa; padding: 8px; margin 5px 0; border-radius: 4px;>
+            <p style="margin: 0;"><b>assistant:</b> ${"Ok, I will generate a list of units we can cover for " + message}</p></div>`;
+            chat.appendChild(row);
+
+            // prompt openclaw to generate list of units for course
+            const payload = {
+                type: "req",
+                id: String(crypto.randomUUID()),
+                method: "chat.send",
+                params: {
+                    sessionKey: "main",
+                    message: "send just an exactly formatted array like so: [item1, item2, item3, etc..] with no other text that just contains every relevant unit for this physics course: " + message,
+                    idempotencyKey: String(crypto.randomUUID())
+                }
+            };
+            ws.send(JSON.stringify(payload))
+        }
+        return;
+    }
 
     // send msg to openclaw through websocket
     ws.send(JSON.stringify(payload));

@@ -52,8 +52,9 @@
 </head>
 <body>
 <header>
-    <h2>Management Assistant</h2>
-    <div style="display: flex; align-items: center; gap: 8px;">
+    <h2>PocketEngineer: Physics Dashboard</h2>
+    <img src="https://cdn-icons-png.flaticon.com/512/9091/9091885.png" width="40" height="40">
+    <div style="display: flex; align-items: center; gap: 4px;">
         <!-- widgets on top right -->
         <button style="background: #1a1a1a; border: 1px solid #444; color: #fff; font-family: 'JetBrains Mono', monospace; font-size: 13px; padding: 6px 12px; border-radius: 8px; cursor: pointer;">your updates for today</button>
         <button style="background: #1a1a1a; border: 1px solid #444; color: #fff; font-family: 'JetBrains Mono', monospace; font-size: 13px; padding: 6px 12px; border-radius: 8px; cursor: pointer;">summarize meeting</button>
@@ -61,7 +62,7 @@
         <div id="todo-widget">
             <button id="todo-toggle" onclick="toggleTodo()">todos</button>
             <div id="todo-panel">
-            <h3>To-do list</h3>
+            <h3>todo list</h3>
             <ul id="todo-list"></ul>
             <div id="todo-add">
                 <input id="todo-input" type="text" placeholder="add todos..." onkeydown="if(event.key==='Enter') addTodo()" />
@@ -70,6 +71,9 @@
             </div>
         </div>
     </div>
+</header>
+<header>
+    <h6>Just say "lets practice!"</h6>
 </header>
 
     <!-- input chat button -->
