@@ -1,29 +1,51 @@
-// electron store
-const Store = require('electron-store');
-const store = new Store();
+class SimpleEmitter {
+    constructor() {this.listeners = {};}
+    on(event, callback) {
+        if (!this.listeners[event]) this.listeners[event] = [];
+        this.listeners[event].push(callback);
+    }
+    off(evt, cb) {
+        if (!this.listeners[evt]) return;
+        this.listeners[evt] = this.listeners[evt].filter(l => l !== cb);
+    }
+    once(evt, cb) {
+        const wrapper = (...args) => { this.off(evt, wrapper); cb(...args); };
+        this.on(evt, wrapper);
+    }
+    emit(evt, ...args) {
+        (this.listeners[evt] || []).forEach(cb => cb(...args));
+    }
+}
+const valueEventEmitter = new SimpleEmitter();
+
+
+
 let need_username = false;
 let need_physics_level = false;
 let setup_incomplete = false;
 let need_physics_units = false;
+
 
 // start websocket
 const ws = new WebSocket("ws://127.0.0.1:18789"); // TODO: replace with where you are running openclaw
 
 let nonce = null;
 let connected = false;
+let noHTML = false;
 
 // check if websocket started
-ws.onopen = () => {
+ws.onopen = async () => {
     console.log("websocket started")
-    const user = store.get('username');
-    const pl = store.get('physics-level');
-    const pu = store.get('physics-units');
-    console.log(user);
-    console.log(pl);
-    console.log(pu);
+
+    const user = await window.electronAPI.storeGet('username');
+    const pl = await window.electronAPI.storeGet('physics-level');
+    const pu = await window.electronAPI.storeGet('physics-units');
+
     if (!user || !pl || !pu) {
         setup_incomplete = true;
+        globalThis.pul = [];
     }
+
     if (setup_incomplete) {
         need_username = true;
         need_physics_level = true;
@@ -36,7 +58,47 @@ ws.onopen = () => {
         <p style="margin: 0;"><b>assistant:</b> ${"Hello! it seems like you're new here. I am your personal physics learning assistant. Lets start with a few questions, what would you like me to call you?"}</p></div>`;
         chat.appendChild(row);
     }
-        
+
+
+    // generate unit map
+    let pul = await window.electronAPI.storeGet('physics-units');
+    let pup = await window.electronAPI.storeGet('physics-units-progress');
+
+    const container = document.getElementById('unit-map');
+    for (let p = 0; p < pul.length; p++) {
+        const unitwrapper = document.createElement('div');
+        unitwrapper.className = "unitprog";
+
+        const ni = document.createElement('button');
+        ni.textContent = pul[p];
+        ni.style.backgroundColor = "#ad5f51";
+        ni.style.fontSize = "30px";
+        ni.style.borderRadius = "20px";
+        ni.style.borderWidth = "10px";
+        ni.style.borderColor = "#3b211d";
+        ni.style.padding = "4px 10px";
+        ni.style.color = "#000";
+        ni.style.cursor = "pointer";
+        ni.style.width = "100%";
+        ni.style.fontFamily = "JetBrains Mono";
+        ni.onclick = functiontbd;
+
+        const desc = document.createElement('span');
+        desc.className = "unitprogtext";
+        desc.textContent = "in progress";
+
+        // if mastered
+        if (pup[p] == 1) {
+            ni.style.backgroundColor = "#34eb3a";
+            desc.textContent = "mastered";
+        }
+
+        unitwrapper.appendChild(ni);
+        unitwrapper.appendChild(desc);
+        container.appendChild(unitwrapper);
+
+    }
+
 };
 
 ws.onerror = (err) => {
@@ -48,7 +110,7 @@ ws.onclose = (event) => {
 };
 
 // if user sends message
-ws.onmessage = (msg) => {
+ws.onmessage = async (msg) => {
     // user msg data
     const data = JSON.parse(msg.data);
     console.log("user message lore: ", data);
@@ -75,7 +137,7 @@ ws.onmessage = (msg) => {
                     mode: "ui"
                 },
                 auth: {
-                    token: "OPENCLAW_GATEWAY_TOKEN".trim() //TODO: replace with your openclaw gateway token
+                    token: "YOUR-CUSTOM-TOKEN".trim() //TODO: replace with your openclaw gateway token
                 },
             }
         };
@@ -89,6 +151,12 @@ ws.onmessage = (msg) => {
     if (data.type === "res" && data.ok && data.payload?.type == "hello-ok") {
         connected = true;
         console.log("connected to openclaw!");
+
+        if (!setup_incomplete) {
+            const units = await window.electronAPI.storeGet('physics-units'); // NEW
+            promptOpenclaw("You are my physics study assistant who is helping me study these units: " + units + ". Just respond to this with 'Hey there! Whats your plan for today?'");
+        }
+        
     }
 
     // error check
@@ -107,29 +175,91 @@ ws.onmessage = (msg) => {
             const existing = document.getElementById("assistant-last");
             // if response already exists append
             if (existing) {
-                existing.innerHTML = `<div style="background-color: #210909; color: red; width: fit-content; border: 1px solid #fafafa; padding: 8px; margin 5px 0; border-radius: 4px;>
+                if (!noHTML) {
+                    existing.innerHTML = `<div style="background-color: #210909; color: red; width: fit-content; border: 1px solid #fafafa; padding: 8px; margin 5px 0; border-radius: 4px;>
         <p style="margin: 0;"><b>assistant:</b> ${existing.dataset.text + payload.deltaText}</p></div>`;
+                    noHTML = false;
+                }
+                
                 existing.dataset.text += payload.deltaText;
             } else { // if response doesn't already exist make one
                 const p = document.createElement("p");
                 p.id = "assistant-last";
                 p.dataset.text = payload.deltaText;
-                p.innerHTML = `<div style="background-color: #210909; color: red; width: fit-content; border: 1px solid #fafafa; padding: 8px; margin 5px 0; border-radius: 4px;>
-        <p style="margin: 0;"><b>assistant:</b> ${payload.deltaText}</p></div>`;
+                if (!noHTML) {
+                    p.innerHTML = `<div style="background-color: #210909; color: red; width: fit-content; border: 1px solid #fafafa; padding: 8px; margin 5px 0; border-radius: 4px;>
+        <p style="margin: 0;"><b>assistant:</b> ${payload.deltaText}</p></div>`;    
+                }
                 chat.appendChild(p);
             }
         }
         
         // clear wip response if last chunk of openclaw response is sent
         if (payload.state === "final") {
+            noHTML = false;
             const el = document.getElementById("assistant-last");
             console.log(document.getElementById("assistant-last").dataset.text);
             // update for physics units if needed
+            let prog = [];
             if (need_physics_units) {
-                store.set('physics-units', document.getElementById("assistant-last").dataset.text);
+                const pu = document.getElementById("assistant-last").dataset.text;
+                let word = "";
+                for (let i = 0; i < pu.length; i++) {
+                    const c = pu.charAt(i);
+                    if (c == ",") {
+                        pul.push(word);
+                        prog.push("new");
+                        word = "";
+                    } else if (i==pu.length-1) {
+                        word += c;
+                        pul.push(word);
+                        prog.push(0);
+                    } else {
+                        word += c;
+                    }
+                }
+
+                await window.electronAPI.storeSet('physics-units', pul);
+                await window.electronAPI.storeSet('physics-units-progress', prog);
+
+                console.log(pul);
+                console.log(prog);
                 need_physics_units = false;
                 setup_incomplete = false;
+
+                const container = document.getElementById('unit-map');
+                for (let p = 0; p < pul.length; p++) {
+                    const unitwrapper = document.createElement('div');
+                    unitwrapper.className = "unitprog";
+
+                    const ni = document.createElement('button');
+                    ni.textContent = pul[p];
+                    ni.style.backgroundColor = "#ad5f51";
+                    ni.style.fontSize = "30px";
+                    ni.style.borderRadius = "20px";
+                    ni.style.borderWidth = "10px";
+                    ni.style.borderColor = "#3b211d";
+                    ni.style.padding = "10px 16px";
+                    ni.style.color = "#fff";
+                    ni.style.cursor = "pointer";
+                    ni.style.width = "100%";
+
+                    const desc = document.createElement('span');
+                    desc.className = "unitprogtext";
+                    desc.textContent = "test";
+
+                    unitwrapper.appendChild(ni);
+                    unitwrapper.appendChild(desc);
+                    container.appendChild(unitwrapper);
+                }
             }
+
+            if (quizzing) {
+                const finalResponseText = el ? el.dataset.text : "";
+                valueEventEmitter.emit("quiz-ready", finalResponseText);
+                quizzing = false;
+            }
+
             if (el) el.removeAttribute("id");        }
     }
     
@@ -138,8 +268,143 @@ ws.onmessage = (msg) => {
     }
 };
 
-// handle user msg send
-window.send = function () {
+let quizzing = false;
+
+functiontbd = async function() {
+    // retrieve button phys unit
+    const cbutton = event.currentTarget.textContent;
+    console.log(cbutton);
+
+    // retrieve phys unit progress
+    const units = await window.electronAPI.storeGet('physics-units');
+    const unitindex = units.indexOf(cbutton);
+    console.log(unitindex);
+
+    const unitsProgress = await window.electronAPI.storeGet('physics-units-progress');
+    const physprogress = unitsProgress[unitindex];
+
+    // ask to finish last thing
+    if (physprogress == 0) {
+        console.log("Would you like to start with a quiz?")
+        quizzing = true;
+        
+        window.electronAPI.openQuizWindow();
+        window.electronAPI.updateQuiz(`<h1 style="color: red;">Quiz: ${cbutton}</h1>`);
+
+        valueEventEmitter.once('quiz-ready', (quizText) => {
+            let word = "";
+            let qlist = []
+            for (c in quizText) {
+                // split off questions and answers into different lists
+                if (quizText[c] == "[") {
+                    let qstart = true;
+                } else if (quizText[c] == "]") {
+                    let wordlist = [];
+                    let w = "";
+                    for (ch in word) {
+                        if (word[ch] == "," || ch == word.length-1) {
+                            if (ch == word.length-1) {
+                                w += word[ch]
+                            }
+                            wordlist.push(w);
+                            w = ""
+                        } else {
+                            w += word[ch];
+                        }
+                    }
+                    qlist.push(wordlist);
+                    word = "";
+                } else {
+                    word += quizText[c];
+                }
+            }
+            console.log(qlist);
+            let qPromptList = [];
+            for (q in qlist) {
+                qu = qlist[q];
+                const divId = `quiz-${q}`;
+                window.electronAPI.updateQuiz(
+                    `<h1 style="color: brown;">${qu[0]}</h1><div id="${divId}"></div>`);
+                
+                let question = qu[0];
+                window.electronAPI.onUpdateDiagnosticQuestionsData(question, q);
+                qPromptList.push(question);
+                
+                for (let i = 1; i < qu.length; i++) {
+                    console.log(qu[i]);
+                    if (qu[i].includes("!!!")) {
+                        console.log("ANSWER: " + qu[i]);
+                        let tob = qu[i].slice(4);
+
+                        window.electronAPI.updateQuizAnswers({
+                            divId: divId,
+                            button: {
+                                text: tob,
+                                isCorrect: true,
+                                color: "red",
+                            },
+                        })
+                        
+                    } else {
+                        window.electronAPI.updateQuizAnswers({
+                            divId: divId,
+                            button: {
+                                text: qu[i],
+                                isCorrect: false,
+                                color: "red",
+                            },
+                        });
+                    }
+                }
+            }
+
+            // check if quiz done and save progress if so
+            //console.log(storeGet('physics-units-progress'));
+
+            console.log(qPromptList);
+        });
+
+        window.electronAPI.onTellRendererDiagnosticDone(async (event) => {
+            console.log("FROM RENDERER TO WORK ON: " + await window.electronAPI.storeGet('topics-to-review'));
+            promptOpenclaw("Ask me if I wanted to review these topics that I missed on the diagnostic check in a concise and readable manner, then follow up and ask what i'd like to learn more about. Don't use bullet points and format it readably: " + await window.electronAPI.storeGet('topics-to-review'));
+        });
+
+        const payload = {
+            type: "req",
+            id: String(crypto.randomUUID()),
+            method: "chat.send",
+            params: {
+                sessionKey: "main",
+                message: "I am fully new to this physics unit: " + cbutton + ". Generate a 4 question, diagnostic check of the topics covered by this unit. Format it exactly like so but vary which answer choice is correct. For the correct answer, start it with !!! and do not use commas within the question prompt, but put one after the question to seperate it from the first answer choice. Keep the questions college-board MCQ style. Example: [what color is the sky?, !!!blue, pink, green, purple]",
+                idempotencyKey: String(crypto.randomUUID()),
+            }
+        };
+
+        ws.send(JSON.stringify(payload));
+
+        noHTML = true;
+
+    // record score and update progress
+    } else if (physprogress == 1) {
+        console.log("It looks like you have already quizzed on this topic, would you like to try a mastery check?");
+    }
+}
+
+const promptOpenclaw = function(msg) {
+    const payload = {
+        type: "req",
+        id: String(crypto.randomUUID()),
+        method: "chat.send",
+        params: {
+            sessionKey: "main",
+            message: msg,
+            idempotencyKey: String(crypto.randomUUID())
+        }
+    };
+    ws.send(JSON.stringify(payload));
+}
+
+window.send = async function () {
     // store user input in msg
     const input = document.getElementById("input");
     const chat = document.getElementById("chat");
@@ -147,8 +412,9 @@ window.send = function () {
     input.value = "";
 
     // update ui
-    chat.innerHTML += `<div style="float: right; background-color: #210909; color: #fafafa; width: fit-content; border-color: #fafafa; border: 1px solid #fafafa; padding: 8px; margin: 5px 0; border-radius: 4px;">
-        <p style="margin: 0;"><b>you:</b> ${message}</p></div>`;
+    chat.innerHTML += `<div style="display: flex; justify-content: flex-end; background-color: #210909; color: #fafafa; width: fit-content; border-color: #fafafa; border: 1px solid #fafafa; padding: 8px; margin: 5px 0; border-radius: 4px;">
+        <div style="display: flex; justify-content: flex-end; width: fit-content; line-height:30px;"> <p style="margin: 0;"><b>you:</b> ${message}</p> </div>
+        </div>`;
     const payload = {
         type: "req",
         id: String(crypto.randomUUID()),
@@ -163,25 +429,24 @@ window.send = function () {
     if (setup_incomplete) {
         if (need_username) {
             console.log('setting username: ' + message);
-            store.set('username', message);
-            need_username = false;
-            const u = store.get('username');
-            console.log(u);
-            need_username = false;
+
+            await window.electronAPI.storeSet('username', message);
+
+            console.log(await window.electronAPI.storeGet('username'));
+
             // prompt for physics level
             const chat = document.getElementById("chat");
             const row = document.createElement("div");
             row.className = "msg-row assistant";
-            row.innerHTML = `<div style="background-color: #210909; color: red; width: fit-content; border: 1px solid #fafafa; padding: 8px; margin 5px 0; border-radius: 4px;>
+            row.innerHTML = `<div style="background-color: #210909; color: red; width: fit-content; border: 1px solid #fafafa; padding: 8px; margin 5px 0; border-radius: 8px; float: left>
             <p style="margin: 0;"><b>assistant:</b> ${"Hello " + message + "! What level of physics are you studying? For example, AP Physics 1, Mechanics, Electricity&Magnetism, or whatever else you're working on!"}</p></div>`;
             chat.appendChild(row);
         } else if (need_physics_level) {
             // yap
             console.log('setting physics level: ' + message);
-            store.set('physics-level', message);
+            await window.electronAPI.storeSet('physics-level', message);
+
             need_username = false;
-            const u = store.get('physics-level');
-            console.log(u);
             need_physics_level = false;
             // prompt for physics units
             const chat = document.getElementById("chat");
@@ -191,18 +456,7 @@ window.send = function () {
             <p style="margin: 0;"><b>assistant:</b> ${"Ok, I will generate a list of units we can cover for " + message}</p></div>`;
             chat.appendChild(row);
 
-            // prompt openclaw to generate list of units for course
-            const payload = {
-                type: "req",
-                id: String(crypto.randomUUID()),
-                method: "chat.send",
-                params: {
-                    sessionKey: "main",
-                    message: "send just an exactly formatted array like so: [item1, item2, item3, etc..] with no other text that just contains every relevant unit for this physics course: " + message,
-                    idempotencyKey: String(crypto.randomUUID())
-                }
-            };
-            ws.send(JSON.stringify(payload))
+            promptOpenclaw("send just an exactly formatted list like so: item1,item2,item3,etc.. with no other text that just contains every relevant unit for this physics course: " + message + ". If a student says they are doing an AP physics course, use the official collegeboard units. Even if the course does not make sense, just add the default items kinematics and energy");
         }
         return;
     }

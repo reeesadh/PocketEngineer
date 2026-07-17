@@ -15,39 +15,98 @@
             header {display: flex; align-items: center; justify-content: space-between; padding: 16px; border-bottom: 3px solid #222;}
             h2 {color: red;}
 
-            /* todo widget style */
-            #todo-widget {position: relative;}
-            #todo-toggle {background: #1a1a1a; border: 1px solid #444; color: #fff; font-family: 'JetBrains Mono', monospace; font-size: 13px; padding: 6px 12px; border-radius: 8px; cursor: pointer;}
-            #todo-toggle:hover {background: #222;}
-            #todo-panel {display: none; position: absolute; top: 36px; right: 0; width: 260px; background: #111; border: 1px solid #333; border-radius: 10px; padding: 12px; z-index: 100;}
-            #todo-panel.open {display: block;}
-            #todo-panel h3 {font-size: 13px; color: #aaa; margin-bottom: 10px;}
-            #todo-list {list-style: none; display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; max-height: 200px; overflow-y: auto;}
-            #todo-list li {display: flex; align-items: center; gap: 8px; font-size: 13px;}
-            #todo-list li input[type="checkbox"] { accent-color: red; cursor: pointer;}
-            #todo-list li span {flex: 1; }
-            #todo-list li span.done {text-decoration: line-through; color: #555;}
-            #todo-list li button {background: none; border: none; color: #555; cursor: pointer; font-size: 14px;}
-            #todo-list li button:hover {color: #fff;}
-            #todo-add {display: flex; gap: 6px;}
-            #todo-input {flex: 1; background: #1a1a1a; border: 1px solid #444; border-radius: 6px; color: #fff; font-family: 'JetBrains Mono', monospace; font-size: 12px; padding: 6px 8px; outline: none;}
-            #todo-add button {background: #1a1a1a; border: 1px solid #555; border-radius: 6px; color: #fff; font-size: 12px; padding: 6px 10px; cursor: pointer;}
-            #todo-add button:hover {background: #222;}
-
             /* user chat input style */
-            #chat {flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px;}
+            #chat {
+                flex: 1; 
+                overflow-y: auto; 
+                padding: 16px; 
+                flex-direction: column; 
+                display: flex; 
+                gap: 10px; 
+                float: right;
+            }
             .msg-row {display: flex;}
             .msg-row.user {justify-content: flex-end;}
             .msg-row.assistant {justify-content: flex-start;}
-            .bubble {max-width: 70%; padding: 10px 14px; border-radius: 16px; font-size: 14px; line-height: 1.5; word-break: break-word;}
-            .bubble.user {background: #1d4ed8; color: #fff; border-bottom-right-radius: 4px;}
-            .bubble.assistant {background: #1a1a1a; border: 1px solid #333; color: #fff; border-bottom-left-radius: 4px;}
-            .label {font-size: 11px; color: #888; margin-bottom: 4px;}
+            .bubble {
+                max-width: 70%; 
+                padding: 10px 14px; 
+                border-radius: 16px; 
+                font-size: 14px; 
+                line-height: 1.5; 
+                word-break: break-word;
+            }
+            .bubble.user {
+                background: #1d4ed8; 
+                color: #fff; 
+                border-bottom-right-radius: 4px;
+                float: right;
+            }
+            .bubble.assistant {
+                background: #1a1a1a; 
+                border: 1px solid #333; 
+                color: #fff; 
+                border-radius: 20px;
+                border-bottom-left-radius: 1px;
+                float: left;
+            }
+            .label {
+                font-size: 11px; 
+                color: #888; 
+                margin-bottom: 4px;
+            }
             .msg-row.user .label {text-align: right;}
-            #input-bar {display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid #222;}
-            #input-bar input {flex: 1; padding: 8px 12px; border-radius: 8px; border: 1px solid #444; background: #1a1a1a; color: #fff; font-size: 14px; outline: none;}
-            #input-bar button {padding: 8px 16px; border-radius: 8px; border: 1px solid #555; background: #1a1a1a; color: #fff; font-size: 14px; cursor: pointer;}
-            #input-bar button:hover {background: #222;}
+
+            #input-bar {
+                display: flex; 
+                gap: 8px; 
+                padding: 12px 16px; 
+                border-top: 1px solid #222;
+            }
+            #input-bar input {flex: 1; 
+                padding: 8px 12px; 
+                border-radius: 8px; 
+                border: 1px solid #444; 
+                background: #1a1a1a; 
+                color: #fff; 
+                font-size: 14px; 
+                outline: none;
+            }
+            #input-bar button {
+                padding: 8px 16px; 
+                border-radius: 8px; 
+                border: 1px solid #555; 
+                background: #1a1a1a; 
+                color: #fff; 
+                font-size: 14px; 
+                cursor: pointer;
+            }
+            #input-bar button:hover {background: #999;}
+
+            .unitprog {
+                position: relative;
+                border-bottom: 1px dotted black;
+                cursor: pointer;
+            }
+
+            .unitprogtext {
+                visibility: hidden;
+                width: 100px;
+                background-color: #222;
+                color: #fff;
+                text-align: center;
+                border-radius: 8px;
+                padding: 6px 10px;
+                position: absolute;
+                bottom: 110%;
+                left: 50%;
+                transform: translateX(-50%);
+                z-index: 10;
+            }
+            
+            .unitprog:hover .unitprogtext {
+                visibility: visible;
+            }
         </style>
 </head>
 <body>
@@ -55,72 +114,28 @@
     <h2>PocketEngineer: Physics Dashboard</h2>
     <img src="https://cdn-icons-png.flaticon.com/512/9091/9091885.png" width="40" height="40">
     <div style="display: flex; align-items: center; gap: 4px;">
-        <!-- widgets on top right -->
-        <button style="background: #1a1a1a; border: 1px solid #444; color: #fff; font-family: 'JetBrains Mono', monospace; font-size: 13px; padding: 6px 12px; border-radius: 8px; cursor: pointer;">your updates for today</button>
-        <button style="background: #1a1a1a; border: 1px solid #444; color: #fff; font-family: 'JetBrains Mono', monospace; font-size: 13px; padding: 6px 12px; border-radius: 8px; cursor: pointer;">summarize meeting</button>
-        <button style="background: #1a1a1a; border: 1px solid #444; color: #fff; font-family: 'JetBrains Mono', monospace; font-size: 13px; padding: 6px 12px; border-radius: 8px; cursor: pointer;">schedule</button>
-        <div id="todo-widget">
-            <button id="todo-toggle" onclick="toggleTodo()">todos</button>
-            <div id="todo-panel">
-            <h3>todo list</h3>
-            <ul id="todo-list"></ul>
-            <div id="todo-add">
-                <input id="todo-input" type="text" placeholder="add todos..." onkeydown="if(event.key==='Enter') addTodo()" />
-                <button onclick="addTodo()">Add</button>
-            </div>
-            </div>
-        </div>
     </div>
 </header>
 <header>
-    <h6>Just say "lets practice!"</h6>
+    <h6>something something something</h6>
 </header>
 
     <!-- input chat button -->
-    <div id="chat"></div>
-    <div id="input-bar">
-        <input id="input" type="text" placeholder="Type here..." onkeydown="if(event.key==='Enter') send()" />
-        <button onclick="send()">Send</button>
+    <div style="display: flex; flex: 1; overflow: hidden;">
+        <!-- chat -->
+        <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+            <div id="chat"></div>
+            <div id="input-bar">
+                <input id="input" type="text" placeholder="Type here..." onkeydown="if(event.key==='Enter') send()" />
+                <button onclick="send()">Send</button>
+            </div>
+        </div>
+        <!-- unit map -->
+        <div id="unit-map" style="width: 800px; background: #000; border-left: 1px solid #222; padding: 16px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; overflow-x: visible; align-items: center;">
+            <div class="box-1"></div>
+        </div>
     </div>
 
     <script src="renderer.js"></script>
-    <script>
-        function toggleTodo() {
-            document.getElementById("todo-panel").classList.toggle("open");
-        }
-        
-        /* add todos */
-        function addTodo() {
-            /* get user input on what todo is */
-            const input = document.getElementById("todo-input");
-            const text = input.value.trim();
-            if (!text) return;
-            input.value = "";
-            
-            /* check if checkbox checked */
-            const todo = document.createElement("todo");
-            const checkbox = document.createElement("input");
-            checkbox.type = "checkbox";
-            checkbox.onchange = () => span.classList.toggle("done", checkbox.checked);
-
-            const span = document.createElement("span");
-            span.textContent = text;
-
-            const del = document.createElement("button");
-            del.textContent = "✕";
-            del.onclick = () => todo.remove();
-
-            todo.append(checkbox, span, del);
-            document.getElementById("todo-list").appendChild(todo);
-        }
-        
-        // close todo widget if clicked outside
-        document.addEventListener("click", (e) => {
-            const widget = document.getElementById("todo-widget");
-            if (!widget.contains(e.target)) {
-                document.getElementById("todo-panel").classList.remove("open");
-            }
-        });
-    </script>
 </body>
 </html>

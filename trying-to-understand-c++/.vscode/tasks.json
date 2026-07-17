@@ -1,0 +1,26 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "cppbuild",
+            "label": "C/C++: clang build active file",
+            "command": "/usr/bin/clang++",
+            "args": [
+                "-fcolor-diagnostics",
+                "-fansi-escape-codes",
+                "-g",
+                "${file}",
+                "/Users/rheasadhwani/Downloads/glad/src/glad.c", // Compile glad.c
+                "-I/Users/rheasadhwani/Downloads/glad/include", // Include glad.h
+                "-lglfw", // Link GLFW
+                "-framework OpenGL", // Link OpenGL (macOS-specific)
+                "-o",
+                "${workspaceFolder}/bin/${fileBasenameNoExtension}"
+            ],
+            "options": {
+                "cwd": "${fileDirname}"
+            },
+            "problemMatcher": ["$gcc"]
+        }
+    ]
+}

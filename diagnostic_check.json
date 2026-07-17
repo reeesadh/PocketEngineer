@@ -1,0 +1,42 @@
+[
+  {
+    "question": "what provides the centripetal force for an object moving in a horizontal circle?",
+    "value": false
+  },
+  {
+    "question": "  \nwhich quantity remains constant for an object in uniform circular motion?",
+    "value": false
+  },
+  {
+    "question": "  \nwhat is the direction of the gravitational force on a satellite orbiting earth?",
+    "value": true
+  },
+  {
+    "question": "  \naccording to newton’s law of universal gravitation the force between two masses is proportional to what?",
+    "value": false
+  },
+  {
+    "question": "  \nWhat happens to total mechanical energy in an ideal frictionless pendulum?",
+    "value": false
+  },
+  {
+    "question": "  \nWhich of the following is a source of work?",
+    "value": false
+  },
+  {
+    "question": "  \nIf 150 joules of work is done in 5 seconds what is the power?",
+    "value": false
+  },
+  {
+    "question": "  \nWhich law relates work done to change in kinetic energy?",
+    "value": false
+  },
+  {
+    "question": "  \nWhen a force is applied over a distance what is being transferred?",
+    "value": false
+  },
+  {
+    "question": "  \nWhen work is done at a faster rate what increases?",
+    "value": false
+  }
+]
