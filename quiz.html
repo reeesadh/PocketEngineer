@@ -1,0 +1,121 @@
+<html>
+    <body style="background:rgb(0, 0, 0); color:rgb(0, 0, 0);">
+        <h1 style="color: brown;"></h1>
+        <div id="title">
+        </div>
+        <div id="quiz"></div>
+
+        
+
+        <script>            
+            window.electronAPI.onUpdateQuiz((html) => {
+                const title = document.getElementById("title");
+                if (title) {
+                    title.insertAdjacentHTML('beforeend', html);
+                }
+            });
+
+            const diagnosticCheckPath = window.electronAPI.getDiagnosticCheckPath();
+            let questionsToReview = "";
+
+            window.electronAPI.onUpdateQuizAnswers((data) => {
+                const {divId, button} = data;
+
+                let parentDiv = document.getElementById(divId);
+                if (!parentDiv) {
+                    parentDiv = document.createElement("div");
+                    parentDiv.id = divId;
+                    document.body.appendChild(parentDiv);
+                }
+
+                async function loadDiagnosticData() {
+                    try {
+                        const res = await fetch('./diagnostic_check.json');
+                        const data = await res.json();
+                        console.log(data);
+                        return data;
+                    } catch (e) {
+                        console.error(e);
+                        return null;
+                    }
+                }
+
+                async function updateDiagnosticData(question_index, correct) {
+                    try {
+                        window.electronAPI.sendUpdateDiagnosticCheck(question_index, correct);
+                    } catch (e) {
+                        console.error(e);
+                    }
+                }
+
+                console.log("BUTTON ", button);
+                console.log("div ", parentDiv);
+                   
+                const qbutton = document.createElement("button");
+                qbutton.textContent = button.text;
+                qbutton.style.color = button.color;
+                qbutton.style.borderColor = "aquamarine";
+                qbutton.style.padding = "12px 12px";
+                qbutton.style.borderRadius = "12px";
+                qbutton.dataset.correct = button.isCorrect;
+
+                let divnum = Number(divId.at(-1))
+                updateDiagnosticData(divnum, null);
+
+                async function qbuttonClick(event) {
+                    console.log("button clicked");
+                    const isCorrect = event.target.dataset.correct === "true";
+                    console.log(`button clicked ${isCorrect}`);
+                    
+                    if (isCorrect) {
+                        qbutton.style.backgroundColor = "green";
+                    } else {
+                        qbutton.style.backgroundColor = "red";
+                    }
+
+                    // update question progress in array
+                    console.log(divnum);
+                    console.log(isCorrect);
+                    console.log("BUTTON CONTENT: " + qbutton.textContent);
+                    const allitems = document.querySelectorAll(`#${divId} button`);
+                    for (item in allitems) {
+                        console.log("BUTTON CONTENT: " + item.textContent);
+                    }
+                    console.log(divId);
+                    updateDiagnosticData(divnum, isCorrect);
+                    const ddata = await loadDiagnosticData();
+                    if (ddata && !ddata.some(item => item.value ===null)) {
+                        console.log("done");
+                        let score_correct = 0;
+                        let score_total = 0;
+                        for (d in ddata) {
+                            if (ddata[d].value == true) {
+                                score_correct++;
+                            }
+                            score_total++;
+                        }
+                        document.body.innerHTML = '';
+                        const score = document.createElement("h1");
+                        score.textContent = score_correct + " out of " + score_total;
+                        score.color = "red";
+                        document.body.appendChild(score);
+                        console.log("sending data from quiz.html: ", event, score_correct, score_total);
+                        window.electronAPI.onDiagnosticCheckDone(event, score_correct, score_total);
+                        window.electronAPI.tellRendererDiagnosticDone(event);
+                        
+                    }
+                    // remove onclick for all buttons for that divid
+                    const allqbuttons = document.querySelectorAll(`#${divId} button`);
+                    for (const qb of allqbuttons) {
+                        qb.disabled = true;
+                    }
+
+                }
+
+                qbutton.addEventListener("click", qbuttonClick);
+
+                parentDiv.appendChild(qbutton);
+            });
+        </script>
+    </body>
+    </html>
