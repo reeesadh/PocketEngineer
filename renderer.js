@@ -106,7 +106,6 @@ ws.onopen = async () => {
         ni.onclick = functiontbd;
 
 
-
         unitwrapper.appendChild(ni);
         unitwrapper.appendChild(desc);
         container.appendChild(unitwrapper);
