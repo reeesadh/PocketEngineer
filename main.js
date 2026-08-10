@@ -28,6 +28,9 @@ function createWindow() {
     mainWindow.isMainWindow = true;
     mainWindow.loadFile("index.html");
 
+    // store.delete('username');
+    // store.delete('physics-units');
+    // store.delete('physics-units-progress');
 }
 
 
@@ -53,17 +56,20 @@ ipcMain.on('open-quiz-window', () => {
     })
 })
 
-ipcMain.on("diagnostic-check-done", async (event, score_corr, score_tot) => {
+ipcMain.on("diagnostic-check-done", async (event, score_corr, score_tot, random, unitIndex) => {
     // update phys unit progress
     console.log("recieving data in main: " + score_corr + score_tot);
+
     let up = store.get('physics-units-progress')
-    console.log(up);
-    if (score_tot >= 4) {
-        up[0] = 1;
+    if (score_tot >= 1) {
+        console.log("SETTING MASTERED");
+        console.log(unitIndex);
+        console.log(up);
+        up[unitIndex] = "mastered";
         console.log("content mastered");
         // send a message saying you can move on
     } else {
-        up[0] = 0;
+        up[unitIndex] = "needs work";
         console.log("content needs work");
         // send a message saying you need more work
         // ask if they want to review
@@ -91,10 +97,22 @@ ipcMain.on('update-quiz', (event, html) => {
     }
 });
 
+ipcMain.on('remove-loading', () => {
+    const allWindows = BrowserWindow.getAllWindows();
+    let quizWindow = allWindows.find(win => win.isQuizWindow === true);
+    quizWindow.webContents.send('remove-loading');
+});
+
 ipcMain.on('diagnostic-is-done', (event) => {
     const allWindows = BrowserWindow.getAllWindows();
     let mainWindow = allWindows.find(win => win.isMainWindow === true);
     mainWindow.webContents.send('diagnostic-is-done');
+});
+
+ipcMain.on('unit-correct', (event, unitIndex) => {
+    const allWindows = BrowserWindow.getAllWindows();
+    let mainWindow = allWindows.find(win => win.isMainWindow === true);
+    mainWindow.webContents.send('unit-correct', unitIndex);
 });
 
 ipcMain.on('update-quiz-answers', (event, data) => {

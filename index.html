@@ -10,10 +10,10 @@
         <style>
             /* overall app style */
             * {box-sizing: border-box; margin: 0; padding: 0;}
-            body {background: #000; color: #fff; font-family: 'JetBrains Mono', monospace; display: flex; flex-direction: column; height: 100vh;}
+            body {background: #0d0d0d; color: #fff; font-family: 'JetBrains Mono', monospace; display: flex; flex-direction: column; height: 100vh;}
 
             header {display: flex; align-items: center; justify-content: space-between; padding: 16px; border-bottom: 3px solid #222;}
-            h2 {color: red;}
+            h2 {color: #2a92d7;}
 
             /* user chat input style */
             #chat {
@@ -112,12 +112,15 @@
 <body>
 <header>
     <h2>PocketEngineer: Physics Dashboard</h2>
-    <img src="https://cdn-icons-png.flaticon.com/512/9091/9091885.png" width="40" height="40">
+    <div id="progress-bar-background" style="width: 400px; height: 22px; background-color: #444; border-radius: 6px; border: 1px solid #535871">
+        <div id="progress-bar-filled" style="width: 10px; height: 20px; background-color: blue; border-radius: 6px;"></div>
+    </div>
+    <img src="https://png.pngtree.com/png-vector/20231202/ourmid/pngtree-rocket-launch-icon-rocket-png-image_10809381.png" width="60" height="60">
     <div style="display: flex; align-items: center; gap: 4px;">
     </div>
 </header>
 <header>
-    <h6>something something something</h6>
+    <h6>Click on a unit to test your knowledge</h6>
 </header>
 
     <!-- input chat button -->
@@ -131,7 +134,7 @@
             </div>
         </div>
         <!-- unit map -->
-        <div id="unit-map" style="width: 800px; background: #000; border-left: 1px solid #222; padding: 16px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; overflow-x: visible; align-items: center;">
+        <div id="unit-map" style="width: 800px; background: #0d0d0d; border-left: 1px solid #222; padding: 16px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; overflow-x: visible; align-items: center;">
             <div class="box-1"></div>
         </div>
     </div>

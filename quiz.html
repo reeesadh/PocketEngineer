@@ -3,23 +3,43 @@
         <h1 style="color: brown;"></h1>
         <div id="title">
         </div>
-        <div id="quiz"></div>
+        <div id="quiz">
+        </div>
 
         
 
-        <script>            
+        <script>
+
+            let unitIndex = null;
+            
             window.electronAPI.onUpdateQuiz((html) => {
-                const title = document.getElementById("title");
+                const udiv = document.getElementById("unit-index");
+                const ldiv = document.getElementById("loading");
+
+                if (udiv) {
+                    unitIndex = udiv.textContent;
+                    udiv.remove(); // CHECK IF IT WORKS
+                }
+
+                console.log("LOADING");
+                console.log(ldiv);
+ 
                 if (title) {
                     title.insertAdjacentHTML('beforeend', html);
                 }
             });
+
 
             const diagnosticCheckPath = window.electronAPI.getDiagnosticCheckPath();
             let questionsToReview = "";
 
             window.electronAPI.onUpdateQuizAnswers((data) => {
                 const {divId, button} = data;
+
+                const ldiv = document.getElementById("loading");
+                if (ldiv) {
+                    ldiv.remove();
+                }
 
                 let parentDiv = document.getElementById(divId);
                 if (!parentDiv) {
@@ -32,7 +52,7 @@
                     try {
                         const res = await fetch('./diagnostic_check.json');
                         const data = await res.json();
-                        console.log(data);
+                        console.log("LOADED DIAGNOSTIC DATA: " + data);
                         return data;
                     } catch (e) {
                         console.error(e);
@@ -99,8 +119,13 @@
                         score.textContent = score_correct + " out of " + score_total;
                         score.color = "red";
                         document.body.appendChild(score);
-                        console.log("sending data from quiz.html: ", event, score_correct, score_total);
-                        window.electronAPI.onDiagnosticCheckDone(event, score_correct, score_total);
+                        console.log(unitIndex);
+                        console.log("sending data from quiz.html: ", event, score_correct, score_total, unitIndex);
+                        window.electronAPI.onDiagnosticCheckDone(event, score_correct, score_total, unitIndex);
+                        if (score_correct >= 1) {
+                            // UPDATE UNIT BUTTON COLOR
+                            window.electronAPI.tellRendererUnitCorrect(event, unitIndex);
+                        }
                         window.electronAPI.tellRendererDiagnosticDone(event);
                         
                     }

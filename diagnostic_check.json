@@ -1,19 +1,19 @@
 [
   {
-    "question": "what provides the centripetal force for an object moving in a horizontal circle?",
-    "value": false
-  },
-  {
-    "question": "  \nwhich quantity remains constant for an object in uniform circular motion?",
-    "value": false
-  },
-  {
-    "question": "  \nwhat is the direction of the gravitational force on a satellite orbiting earth?",
+    "question": "How does the resistance of a wire change as its length increases?",
     "value": true
   },
   {
-    "question": "  \naccording to newton’s law of universal gravitation the force between two masses is proportional to what?",
+    "question": "\nWhat is the relationship between resistance and current for a fixed voltage?",
+    "value": true
+  },
+  {
+    "question": "\nWhat is the SI unit of electrical resistance?",
     "value": false
+  },
+  {
+    "question": "\nWhich material property causes a longer wire to have more resistance?",
+    "value": true
   },
   {
     "question": "  \nWhat happens to total mechanical energy in an ideal frictionless pendulum?",

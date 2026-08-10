@@ -24,6 +24,10 @@ let need_username = false;
 let need_physics_level = false;
 let setup_incomplete = false;
 let need_physics_units = false;
+const green_main = "#3385c4";
+const green_shadow = "#163954";
+const red_main = "#a12f2f";
+const red_shadow = "#451616";
 
 
 // start websocket
@@ -54,7 +58,7 @@ ws.onopen = async () => {
         const chat = document.getElementById("chat");
         const row = document.createElement("div");
         row.className = "msg-row assistant";
-        row.innerHTML = `<div style="background-color: #210909; color: red; width: fit-content; border: 1px solid #fafafa; padding: 8px; margin 5px 0; border-radius: 4px;>
+        row.innerHTML = `<div style="background-color: rgba(78, 26, 26, 0.72); color: white; width: fit-content; padding: 8px; margin 5px 0; border-radius: 4px;>
         <p style="margin: 0;"><b>assistant:</b> ${"Hello! it seems like you're new here. I am your personal physics learning assistant. Lets start with a few questions, what would you like me to call you?"}</p></div>`;
         chat.appendChild(row);
     }
@@ -62,7 +66,11 @@ ws.onopen = async () => {
 
     // generate unit map
     let pul = await window.electronAPI.storeGet('physics-units');
+
+    
+
     let pup = await window.electronAPI.storeGet('physics-units-progress');
+    let mastot = 0;
 
     const container = document.getElementById('unit-map');
     for (let p = 0; p < pul.length; p++) {
@@ -71,11 +79,25 @@ ws.onopen = async () => {
 
         const ni = document.createElement('button');
         ni.textContent = pul[p];
-        ni.style.backgroundColor = "#ad5f51";
+
+        ni.style.backgroundColor = red_main;
+        ni.style.borderColor = red_shadow;
+
+        const desc = document.createElement('span');
+        desc.className = "unitprogtext";
+        desc.textContent = "in progress";
+        
+        if (pup[p] == "mastered") {
+            ni.style.backgroundColor = green_main;
+            ni.style.borderColor = green_shadow;
+            desc.textContent = "mastered";
+            mastot++;
+        }
+
         ni.style.fontSize = "30px";
         ni.style.borderRadius = "20px";
         ni.style.borderWidth = "10px";
-        ni.style.borderColor = "#3b211d";
+        
         ni.style.padding = "4px 10px";
         ni.style.color = "#000";
         ni.style.cursor = "pointer";
@@ -83,15 +105,7 @@ ws.onopen = async () => {
         ni.style.fontFamily = "JetBrains Mono";
         ni.onclick = functiontbd;
 
-        const desc = document.createElement('span');
-        desc.className = "unitprogtext";
-        desc.textContent = "in progress";
 
-        // if mastered
-        if (pup[p] == 1) {
-            ni.style.backgroundColor = "#34eb3a";
-            desc.textContent = "mastered";
-        }
 
         unitwrapper.appendChild(ni);
         unitwrapper.appendChild(desc);
@@ -99,6 +113,11 @@ ws.onopen = async () => {
 
     }
 
+    // update progress bar
+    const pb = document.getElementById("progress-bar-filled");
+    const fill = 400*mastot/pul.length;
+    pb.style.width = `${fill}px`;
+    pb.style.backgroundColor = green_main;
 };
 
 ws.onerror = (err) => {
@@ -137,7 +156,7 @@ ws.onmessage = async (msg) => {
                     mode: "ui"
                 },
                 auth: {
-                    token: "YOUR-CUSTOM-TOKEN".trim() //TODO: replace with your openclaw gateway token
+                    token: "YOUR-OPENCLAW-GATEWAY-TOKEN".trim() //TODO: replace with your openclaw gateway token
                 },
             }
         };
@@ -153,7 +172,7 @@ ws.onmessage = async (msg) => {
         console.log("connected to openclaw!");
 
         if (!setup_incomplete) {
-            const units = await window.electronAPI.storeGet('physics-units'); // NEW
+            const units = await window.electronAPI.storeGet('physics-units');
             promptOpenclaw("You are my physics study assistant who is helping me study these units: " + units + ". Just respond to this with 'Hey there! Whats your plan for today?'");
         }
         
@@ -176,7 +195,7 @@ ws.onmessage = async (msg) => {
             // if response already exists append
             if (existing) {
                 if (!noHTML) {
-                    existing.innerHTML = `<div style="background-color: #210909; color: red; width: fit-content; border: 1px solid #fafafa; padding: 8px; margin 5px 0; border-radius: 4px;>
+                    existing.innerHTML = `<div style="background-color: #210909; color: white; width: fit-content; padding: 8px; margin 5px 0; border-radius: 4px;>
         <p style="margin: 0;"><b>assistant:</b> ${existing.dataset.text + payload.deltaText}</p></div>`;
                     noHTML = false;
                 }
@@ -187,7 +206,7 @@ ws.onmessage = async (msg) => {
                 p.id = "assistant-last";
                 p.dataset.text = payload.deltaText;
                 if (!noHTML) {
-                    p.innerHTML = `<div style="background-color: #210909; color: red; width: fit-content; border: 1px solid #fafafa; padding: 8px; margin 5px 0; border-radius: 4px;>
+                    p.innerHTML = `<div style="background-color: #210909; color: white; width: fit-content; padding: 8px; margin 5px 0; border-radius: 4px;>
         <p style="margin: 0;"><b>assistant:</b> ${payload.deltaText}</p></div>`;    
                 }
                 chat.appendChild(p);
@@ -200,32 +219,38 @@ ws.onmessage = async (msg) => {
             const el = document.getElementById("assistant-last");
             console.log(document.getElementById("assistant-last").dataset.text);
             // update for physics units if needed
-            let prog = [];
             if (need_physics_units) {
                 const pu = document.getElementById("assistant-last").dataset.text;
                 let word = "";
+                let prog = [];
+                let puln = [];
                 for (let i = 0; i < pu.length; i++) {
                     const c = pu.charAt(i);
                     if (c == ",") {
-                        pul.push(word);
+                        puln.push(word);
                         prog.push("new");
                         word = "";
                     } else if (i==pu.length-1) {
                         word += c;
-                        pul.push(word);
-                        prog.push(0);
+                        puln.push(word);
+                        prog.push("new");
                     } else {
                         word += c;
                     }
                 }
 
-                await window.electronAPI.storeSet('physics-units', pul);
+                await window.electronAPI.storeSet('physics-units', puln);
                 await window.electronAPI.storeSet('physics-units-progress', prog);
 
-                console.log(pul);
+                console.log(puln);
                 console.log(prog);
                 need_physics_units = false;
                 setup_incomplete = false;
+
+                // generate unit map first time
+
+                let pul = await window.electronAPI.storeGet('physics-units');
+                let pup = await window.electronAPI.storeGet('physics-units-progress');
 
                 const container = document.getElementById('unit-map');
                 for (let p = 0; p < pul.length; p++) {
@@ -234,24 +259,33 @@ ws.onmessage = async (msg) => {
 
                     const ni = document.createElement('button');
                     ni.textContent = pul[p];
-                    ni.style.backgroundColor = "#ad5f51";
+                    ni.style.backgroundColor = red_main;
                     ni.style.fontSize = "30px";
                     ni.style.borderRadius = "20px";
                     ni.style.borderWidth = "10px";
                     ni.style.borderColor = "#3b211d";
-                    ni.style.padding = "10px 16px";
-                    ni.style.color = "#fff";
+                    ni.style.padding = "4px 10px";
+                    ni.style.color = "#000";
                     ni.style.cursor = "pointer";
                     ni.style.width = "100%";
+                    ni.style.fontFamily = "JetBrains Mono";
+                    ni.onclick = functiontbd;
 
                     const desc = document.createElement('span');
                     desc.className = "unitprogtext";
-                    desc.textContent = "test";
+                    desc.textContent = "in progress";
+
+                    // if mastered
+                    if (pup[p] == 1) {
+                        ni.style.backgroundColor = green_main;
+                        desc.textContent = "mastered";
+                    }
 
                     unitwrapper.appendChild(ni);
                     unitwrapper.appendChild(desc);
-                    container.appendChild(unitwrapper);
+                    container.appendChild(unitwrapper);       
                 }
+
             }
 
             if (quizzing) {
@@ -282,18 +316,29 @@ functiontbd = async function() {
 
     const unitsProgress = await window.electronAPI.storeGet('physics-units-progress');
     const physprogress = unitsProgress[unitindex];
+    console.log(physprogress);
 
     // ask to finish last thing
-    if (physprogress == 0) {
-        console.log("Would you like to start with a quiz?")
+    if (physprogress == "new") {
+        console.log("Would you like to start with a quiz?");
         quizzing = true;
+
+        console.log(await window.electronAPI.storeGet('physics-units-progress'));
         
         window.electronAPI.openQuizWindow();
         window.electronAPI.updateQuiz(`<h1 style="color: red;">Quiz: ${cbutton}</h1>`);
 
+        window.electronAPI.updateQuiz(`<div id="unit-index"><h1 style="color: black;">${unitindex}</h1></div>`);
+
+        // add loading
+        window.electronAPI.updateQuiz(`<div id="loading"><h1 style="color: blue;">Loading...</h1></div>`);
+
         valueEventEmitter.once('quiz-ready', (quizText) => {
             let word = "";
             let qlist = []
+            // remove loading message
+            window.electronAPI.removeLoading();
+            // toSlime.remove();
             for (c in quizText) {
                 // split off questions and answers into different lists
                 if (quizText[c] == "[") {
@@ -358,15 +403,30 @@ functiontbd = async function() {
                 }
             }
 
-            // check if quiz done and save progress if so
-            //console.log(storeGet('physics-units-progress'));
-
             console.log(qPromptList);
         });
 
         window.electronAPI.onTellRendererDiagnosticDone(async (event) => {
             console.log("FROM RENDERER TO WORK ON: " + await window.electronAPI.storeGet('topics-to-review'));
             promptOpenclaw("Ask me if I wanted to review these topics that I missed on the diagnostic check in a concise and readable manner, then follow up and ask what i'd like to learn more about. Don't use bullet points and format it readably: " + await window.electronAPI.storeGet('topics-to-review'));
+        });
+
+        window.electronAPI.onTellRendererUnitCorrect(async (a) => {
+            console.log("UNIT CORRECT");
+            const container = document.getElementById('unit-map');
+            container.children[parseInt(a, 10) + 1].querySelector('button').style.backgroundColor = green_main;
+            container.children[parseInt(a, 10) + 1].querySelector('button').style.borderColor = green_shadow;
+            container.children[parseInt(a, 10) + 1].querySelector('span').textContent = "mastered";
+
+            let pul = await window.electronAPI.storeGet('physics-units');
+            const totalUnits = pul.length;
+            console.log(totalUnits);
+            const pb = document.getElementById("progress-bar-filled");
+            console.log(pb);
+            console.log(parseInt(pb.style.width.slice(0,-2), 10));
+            const fill = parseInt(pb.style.width.slice(0,-2), 10) + 400/totalUnits;
+            console.log(fill);
+            pb.style.width = `${fill}px`;
         });
 
         const payload = {
@@ -412,7 +472,7 @@ window.send = async function () {
     input.value = "";
 
     // update ui
-    chat.innerHTML += `<div style="display: flex; justify-content: flex-end; background-color: #210909; color: #fafafa; width: fit-content; border-color: #fafafa; border: 1px solid #fafafa; padding: 8px; margin: 5px 0; border-radius: 4px;">
+    chat.innerHTML += `<div style="display: flex; justify-content: flex-end; background-color:rgba(0, 149, 255, 0.20); color:rgb(250, 250, 250); width: fit-content; border-color:rgba(250, 250, 250, 0); border: 1px solidrgba(250, 250, 250, 0); padding: 8px; margin: 5px 0; border-radius: 4px;">
         <div style="display: flex; justify-content: flex-end; width: fit-content; line-height:30px;"> <p style="margin: 0;"><b>you:</b> ${message}</p> </div>
         </div>`;
     const payload = {
@@ -434,11 +494,13 @@ window.send = async function () {
 
             console.log(await window.electronAPI.storeGet('username'));
 
+            need_username = false;
+
             // prompt for physics level
             const chat = document.getElementById("chat");
             const row = document.createElement("div");
             row.className = "msg-row assistant";
-            row.innerHTML = `<div style="background-color: #210909; color: red; width: fit-content; border: 1px solid #fafafa; padding: 8px; margin 5px 0; border-radius: 8px; float: left>
+            row.innerHTML = `<div style="background-color:rgba(78, 26, 26, 0.72); color: white; width: fit-content; padding: 8px; margin 5px 0; border-radius: 8px; float: left>
             <p style="margin: 0;"><b>assistant:</b> ${"Hello " + message + "! What level of physics are you studying? For example, AP Physics 1, Mechanics, Electricity&Magnetism, or whatever else you're working on!"}</p></div>`;
             chat.appendChild(row);
         } else if (need_physics_level) {
@@ -452,7 +514,7 @@ window.send = async function () {
             const chat = document.getElementById("chat");
             const row = document.createElement("div");
             row.className = "msg-row assistant";
-            row.innerHTML = `<div style="background-color: #210909; color: red; width: fit-content; border: 1px solid #fafafa; padding: 8px; margin 5px 0; border-radius: 4px;>
+            row.innerHTML = `<div style="background-color: rgba(78, 26, 26, 0.72); color: white; width: fit-content; padding: 8px; margin 5px 0; border-radius: 4px;>
             <p style="margin: 0;"><b>assistant:</b> ${"Ok, I will generate a list of units we can cover for " + message}</p></div>`;
             chat.appendChild(row);
 
