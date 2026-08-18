@@ -24,8 +24,12 @@ let need_username = false;
 let need_physics_level = false;
 let setup_incomplete = false;
 let need_physics_units = false;
-const green_main = "#3385c4";
-const green_shadow = "#163954";
+let the_end = false;
+let reviewing_units = false;
+let reviewing_units_indexes = false;
+let new_class = false;
+const blue_main = "#3385c4";
+const blue_shadow = "#163954";
 const red_main = "#a12f2f";
 const red_shadow = "#451616";
 
@@ -36,6 +40,8 @@ const ws = new WebSocket("ws://127.0.0.1:18789"); // TODO: replace with where yo
 let nonce = null;
 let connected = false;
 let noHTML = false;
+
+
 
 // check if websocket started
 ws.onopen = async () => {
@@ -66,9 +72,6 @@ ws.onopen = async () => {
 
     // generate unit map
     let pul = await window.electronAPI.storeGet('physics-units');
-
-    
-
     let pup = await window.electronAPI.storeGet('physics-units-progress');
     let mastot = 0;
 
@@ -88,8 +91,8 @@ ws.onopen = async () => {
         desc.textContent = "in progress";
         
         if (pup[p] == "mastered") {
-            ni.style.backgroundColor = green_main;
-            ni.style.borderColor = green_shadow;
+            ni.style.backgroundColor = blue_main;
+            ni.style.borderColor = blue_shadow;
             desc.textContent = "mastered";
             mastot++;
         }
@@ -105,10 +108,31 @@ ws.onopen = async () => {
         ni.style.fontFamily = "JetBrains Mono";
         ni.onclick = functiontbd;
 
-
         unitwrapper.appendChild(ni);
         unitwrapper.appendChild(desc);
         container.appendChild(unitwrapper);
+
+        console.log("CHECKING");
+        console.log(mastot);
+        console.log(pul.length);
+
+        // check if all units mastered
+        if (mastot==pul.length) {
+            console.log(mastot);
+            console.log(pul.length);
+            console.log("done");
+            the_end = true;
+            const waitforWebsocket = setInterval(() => {
+                if (connected) {
+                    promptOpenclaw("I am done with every physics unit! Respond to this message by asking me if I would like to start a new physics class, and if so, which one? Or if I want to review old units, which ones? If i pick a new class just respond to my response with 'Sure, lets start fresh'. If i say i want to review some units, respond with 'Ok, we will work on: 'UNIT', 'UNIT', 'UNIT'...'");
+                    clearInterval(waitforWebsocket);
+                }
+            });
+            
+            // ask if they want to reset progress for any units and review again or simply regenerate content
+
+            
+        }
 
     }
 
@@ -116,8 +140,31 @@ ws.onopen = async () => {
     const pb = document.getElementById("progress-bar-filled");
     const fill = 400*mastot/pul.length;
     pb.style.width = `${fill}px`;
-    pb.style.backgroundColor = green_main;
+    pb.style.backgroundColor = blue_main;
+    
 };
+
+// convert string to list
+stringToList = function(msg) {
+    let word = "";
+    let final = [];
+    for (let i = 0; i < msg.length; i++) {
+        const c = msg.charAt(i);
+        if (c == ",") {
+            final.push(word);
+            word = "";
+        } else if (i==msg.length-1) {
+            word += c;
+            final.push(word);
+        } else {
+            word += c;
+        }
+    }
+
+    console.log(final);
+
+    return final;
+}
 
 ws.onerror = (err) => {
     console.error("websocket error", err);
@@ -170,7 +217,7 @@ ws.onmessage = async (msg) => {
         connected = true;
         console.log("connected to openclaw!");
 
-        if (!setup_incomplete) {
+        if (!setup_incomplete && !the_end) {
             const units = await window.electronAPI.storeGet('physics-units');
             promptOpenclaw("You are my physics study assistant who is helping me study these units: " + units + ". Just respond to this with 'Hey there! Whats your plan for today?'");
         }
@@ -200,6 +247,20 @@ ws.onmessage = async (msg) => {
                 }
                 
                 existing.dataset.text += payload.deltaText;
+
+                // if end
+                if (the_end) {
+                    console.log("NEW TODOS: " + existing.dataset.text);
+                    if (existing.dataset.text.includes("Sure")) {
+                        console.log("new class");
+                        new_class = true;
+                    } else if (existing.dataset.text.includes("Ok")) {
+                        console.log("reviewing units");
+                        reviewing_units = true;
+                    } else {
+                        console.log("huh?");
+                    }
+                }
             } else { // if response doesn't already exist make one
                 const p = document.createElement("p");
                 p.id = "assistant-last";
@@ -217,6 +278,68 @@ ws.onmessage = async (msg) => {
             noHTML = false;
             const el = document.getElementById("assistant-last");
             console.log(document.getElementById("assistant-last").dataset.text);
+
+            if (reviewing_units) {
+                // retrieve unit list from user response
+                let pul = await window.electronAPI.storeGet('physics-units');
+                console.log("INITIATING REVIEWING UNITS PROCESS");
+                console.log(el.dataset.text);
+                console.log(el.dataset.text.slice(20));
+                // retrieve actual unit list
+                console.log(pul);
+                // compare and return indexes to set to unmastered
+                promptOpenclaw(`The student said they want to review ${ el.dataset.text.slice(20) } and the actual unit list is ${pul}. just send the indexes of the units to review with commas in between and no other text. example: '0, 2, 12, 56'`);
+                // set those indexes to unmastered
+                reviewing_units = false;
+                reviewing_units_indexes = true;
+            } else if (reviewing_units_indexes) {
+                console.log("FINAL");
+                let rt = document.getElementById("assistant-last").dataset.text;
+                console.log(`FINAL: ${rt}`);
+                let units_to_revise = rt.split(', ')
+                console.log(units_to_revise);
+
+                const container = document.getElementById('unit-map');
+                for (let i = 0; i < units_to_revise.length; i++) {
+                    // set back to unmastered
+                    let toedit = container.children[parseInt(units_to_revise[i], 10) + 1]
+                    toedit.querySelector('button').style.backgroundColor = red_main;
+                    toedit.querySelector('button').style.borderColor = red_shadow;
+                    toedit.querySelector('span').textContent = "in progress";
+
+                    // progress bar update
+                    let pup = await window.electronAPI.storeGet('physics-units-progress');
+                    let mastot = 0;
+                    for (let p = 0; p < pup.length; p++) {        
+                        if (pup[p] == "mastered") {
+                            mastot++;
+                        }
+                    }
+                    const pb = document.getElementById("progress-bar-filled");
+                    const fill = 400*mastot/pup.length;
+                    pb.style.width = `${fill}px`;
+                    pb.style.backgroundColor = blue_main;
+                    
+
+                    let up = await window.electronAPI.storeGet('physics-units-progress')
+                    up[parseInt(units_to_revise[i], 10)] = "needs work";
+                    console.log("PHYSICS UNIT PROGRESS: ", up);
+                    await window.electronAPI.storeSet('physics-units-progress', JSON.parse(JSON.stringify(up)));
+
+                    the_end = false;
+                }
+
+                reviewing_units_indexes = false;
+            }
+
+            if (new_class) {
+                // remove all data
+                await window.electronAPI.storeSet('username', null);
+                await window.electronAPI.storeSet('physics-units', null);
+                await window.electronAPI.storeSet('physics-units-progress', null);
+                location.reload();
+            }
+
             // update for physics units if needed
             if (need_physics_units) {
                 const pu = document.getElementById("assistant-last").dataset.text;
@@ -276,7 +399,7 @@ ws.onmessage = async (msg) => {
 
                     // if mastered
                     if (pup[p] == 1) {
-                        ni.style.backgroundColor = green_main;
+                        ni.style.backgroundColor = blue_main;
                         desc.textContent = "mastered";
                     }
 
@@ -318,19 +441,27 @@ functiontbd = async function() {
     console.log(physprogress);
 
     // ask to finish last thing
-    if (physprogress == "new") {
+    if (physprogress == "new" || physprogress == "needs work") {
         console.log("Would you like to start with a quiz?");
         quizzing = true;
 
         console.log(await window.electronAPI.storeGet('physics-units-progress'));
         
         window.electronAPI.openQuizWindow();
-        window.electronAPI.updateQuiz(`<h1 style="color: red;">Quiz: ${cbutton}</h1>`);
+        window.electronAPI.updateQuiz(`<h1 style="color: #391270;">Quiz: ${cbutton}</h1>`);
+        window.electronAPI.updateQuiz(`<hr style="background-color: #d6d6d6">`);
 
         window.electronAPI.updateQuiz(`<div id="unit-index"><h1 style="color: black;">${unitindex}</h1></div>`);
 
         // add loading
-        window.electronAPI.updateQuiz(`<div id="loading"><h1 style="color: blue;">Loading...</h1></div>`);
+        window.electronAPI.updateQuiz(`
+            <div id="loading">
+                <center>
+                    <img src="loading.gif" style="width:360px; height:200px;">
+                    <h1 style="color: ${blue_main};">Loading...</h1>
+                </center>
+            </div>`
+        );
 
         valueEventEmitter.once('quiz-ready', (quizText) => {
             let word = "";
@@ -368,7 +499,7 @@ functiontbd = async function() {
                 qu = qlist[q];
                 const divId = `quiz-${q}`;
                 window.electronAPI.updateQuiz(
-                    `<h1 style="color: brown;">${qu[0]}</h1><div id="${divId}"></div>`);
+                    `<h1 style="color: #0f4670;">${qu[0]}</h1><div id="${divId}"></div>`);
                 
                 let question = qu[0];
                 window.electronAPI.onUpdateDiagnosticQuestionsData(question, q);
@@ -385,7 +516,7 @@ functiontbd = async function() {
                             button: {
                                 text: tob,
                                 isCorrect: true,
-                                color: "red",
+                                color: "#ffffff",
                             },
                         })
                         
@@ -395,7 +526,7 @@ functiontbd = async function() {
                             button: {
                                 text: qu[i],
                                 isCorrect: false,
-                                color: "red",
+                                color: "#ffffff",
                             },
                         });
                     }
@@ -413,19 +544,41 @@ functiontbd = async function() {
         window.electronAPI.onTellRendererUnitCorrect(async (a) => {
             console.log("UNIT CORRECT");
             const container = document.getElementById('unit-map');
-            container.children[parseInt(a, 10) + 1].querySelector('button').style.backgroundColor = green_main;
-            container.children[parseInt(a, 10) + 1].querySelector('button').style.borderColor = green_shadow;
+            container.children[parseInt(a, 10) + 1].querySelector('button').style.backgroundColor = blue_main;
+            container.children[parseInt(a, 10) + 1].querySelector('button').style.borderColor = blue_shadow;
             container.children[parseInt(a, 10) + 1].querySelector('span').textContent = "mastered";
 
             let pul = await window.electronAPI.storeGet('physics-units');
             const totalUnits = pul.length;
             console.log(totalUnits);
+            
+            // update progress bar
+            let pup = await window.electronAPI.storeGet('physics-units-progress');
+            let mastot = 0;
+            for (let p = 0; p < pup.length; p++) {        
+                if (pup[p] == "mastered") {
+                    mastot++;
+                }
+            }
             const pb = document.getElementById("progress-bar-filled");
-            console.log(pb);
-            console.log(parseInt(pb.style.width.slice(0,-2), 10));
-            const fill = parseInt(pb.style.width.slice(0,-2), 10) + 400/totalUnits;
-            console.log(fill);
+            const fill = 400*mastot/pup.length;
             pb.style.width = `${fill}px`;
+            pb.style.backgroundColor = blue_main;
+
+            // check if all units mastered
+            if (mastot==pul.length) {
+                console.log(mastot);
+                console.log(pul.length);
+                console.log("done");
+                the_end = true;
+                // ask if they want to reset progress for any units and review again or simply regenerate content
+                const waitforWebsocket = setInterval(() => {
+                    if (connected) {
+                        promptOpenclaw("I am done with every physics unit! Respond to this message by asking me if I would like to start a new physics class, and if so, which one? Or if I want to review old units, which ones? If i pick a new class just respond to my response with 'Sure, lets start fresh'. If i say i want to review some units, respond with 'Ok, we will work on: 'UNIT', 'UNIT', 'UNIT'...'");
+                        clearInterval(waitforWebsocket);
+                    }
+                });
+            }
         });
 
         const payload = {
@@ -434,7 +587,7 @@ functiontbd = async function() {
             method: "chat.send",
             params: {
                 sessionKey: "main",
-                message: "I am fully new to this physics unit: " + cbutton + ". Generate a 4 question, diagnostic check of the topics covered by this unit. Format it exactly like so but vary which answer choice is correct. For the correct answer, start it with !!! and do not use commas within the question prompt, but put one after the question to seperate it from the first answer choice. Keep the questions college-board MCQ style. Example: [what color is the sky?, !!!blue, pink, green, purple]",
+                message: "I am fully new to this physics unit: " + cbutton + ". Generate a 10 question, diagnostic check of the topics covered by this unit. Format it exactly like so but vary which answer choice is correct. For the correct answer, start it with !!! and do not use commas within the question prompt, but put one after the question to seperate it from the first answer choice. Keep the questions college-board MCQ style. Example: [what color is the sky?, !!!blue, pink, green, purple]",
                 idempotencyKey: String(crypto.randomUUID()),
             }
         };

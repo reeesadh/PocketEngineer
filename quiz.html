@@ -1,12 +1,14 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
 <html>
-    <body style="background:rgb(0, 0, 0); color:rgb(0, 0, 0);">
+    <body style="background:rgb(0, 0, 0); color:rgb(0, 0, 0); font-family: 'JetBrains Mono';">
         <h1 style="color: brown;"></h1>
         <div id="title">
         </div>
         <div id="quiz">
         </div>
-
-        
 
         <script>
 
@@ -18,7 +20,7 @@
 
                 if (udiv) {
                     unitIndex = udiv.textContent;
-                    udiv.remove(); // CHECK IF IT WORKS
+                    udiv.remove();
                 }
 
                 console.log("LOADING");
@@ -72,9 +74,13 @@
                    
                 const qbutton = document.createElement("button");
                 qbutton.textContent = button.text;
+                qbutton.style.fontSize = "20px";
+                
+                qbutton.style.backgroundColor = "#3385c4";
                 qbutton.style.color = button.color;
-                qbutton.style.borderColor = "aquamarine";
+                qbutton.style.borderColor = "black";
                 qbutton.style.padding = "12px 12px";
+                qbutton.style.paddingRight = "12px";
                 qbutton.style.borderRadius = "12px";
                 qbutton.dataset.correct = button.isCorrect;
 
@@ -116,7 +122,7 @@
                         document.body.innerHTML = '';
                         const score = document.createElement("h1");
                         score.textContent = score_correct + " out of " + score_total;
-                        score.color = "red";
+                        score.style.color = "#0008ff";
                         document.body.appendChild(score);
                         console.log(unitIndex);
                         console.log("sending data from quiz.html: ", event, score_correct, score_total, unitIndex);

@@ -61,7 +61,7 @@ ipcMain.on("diagnostic-check-done", async (event, score_corr, score_tot, random,
     console.log("recieving data in main: " + score_corr + score_tot);
 
     let up = store.get('physics-units-progress')
-    if (score_tot >= 1) {
+    if (score_tot >= 8) {
         console.log("SETTING MASTERED");
         console.log(unitIndex);
         console.log(up);

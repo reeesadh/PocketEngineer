@@ -1,42 +1,42 @@
 [
   {
-    "question": "How does the resistance of a wire change as its length increases?",
+    "question": "When is constructive interference observed in a double slit experiment?",
+    "value": false
+  },
+  {
+    "question": "  \nWhat determines the fringe spacing in a double slit pattern?",
     "value": true
   },
   {
-    "question": "\nWhat is the relationship between resistance and current for a fixed voltage?",
+    "question": "  \nWhich condition improves the visibility of interference fringes?",
     "value": true
   },
   {
-    "question": "\nWhat is the SI unit of electrical resistance?",
+    "question": "  \nHow does fringe spacing change if the slit separation is doubled?",
     "value": false
   },
   {
-    "question": "\nWhich material property causes a longer wire to have more resistance?",
-    "value": true
-  },
-  {
-    "question": "  \nWhat happens to total mechanical energy in an ideal frictionless pendulum?",
+    "question": " maybe exactly four answer options (including correct). The example shows what color is the sky?",
     "value": false
   },
   {
-    "question": "  \nWhich of the following is a source of work?",
+    "question": " but need to keep proper formatting: after question comma then option1",
     "value": false
   },
   {
-    "question": "  \nIf 150 joules of work is done in 5 seconds what is the power?",
+    "question": " Actually need to avoid commas inside options; option1 \"Magnetic field lines expand outward\" no commas; option2 \"The induced current creates a magnetic field that opposes the change\" no commas; option3 \"No current is induced\" (no commas); option4 \"Current flows opposite to magnet motion\" no commas. But we must embed !!! before correct answer which is option3? Actually correct answer is option3 \"No current is induced\"? Actually correct answer is that induced current creates opposing field; but we can choose whichever we want as correct. Let's decide correct answer is fourth option? But we need to start with !!!. So put !!!No current is induced? That would be false. Better make correct answer fourth. So list: option1 \"Current always flows clockwise\"",
     "value": false
   },
   {
-    "question": "  \nWhich law relates work done to change in kinetic energy?",
+    "question": " Actually we need only four options; we currently have four but we listed five? Let's restructure: We need exactly four options.\n\nOption1: \"Magnetic field lines expand outward\"\nOption2: \"The induced current creates a magnetic field that opposes the change\"\nOption3: \"Current always flows clockwise\"\n!!!Option3? Actually we want correct answer maybe option3? But we want to vary position; we can make correct answer second maybe. Let's design:\n\nOption1: \"Magnetic field becomes zero\"\nOption2 !!! \"The induced current creates a magnetic field that opposes the change\"\nOption3: \"Current always flows clockwise\"\nOption4: \"No effect on the field\"\n\nThus correct answer is option2",
     "value": false
   },
   {
-    "question": "  \nWhen a force is applied over a distance what is being transferred?",
+    "question": " But we need to keep commas separating items; we must write as: Which effect does the induced current have on the magnetic field?",
     "value": false
   },
   {
-    "question": "  \nWhen work is done at a faster rate what increases?",
+    "question": " Wait that's too many items.\n\nLet's define exactly 4 options:\n\n1. \"Magnetic field lines expand outward\"\n2. !!!The induced current creates a magnetic field that opposes the change\n3. \"Current always flows clockwise\"\n4. \"No effect on the field\"\n\nThus correct answer is option2",
     "value": false
   }
 ]
